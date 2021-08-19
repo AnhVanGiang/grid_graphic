@@ -180,29 +180,30 @@ class Board:
                     ret.append((nx, ny))
         return ret
 
-    def mark_rects(self, rects: List[Tuple[int, int]]) -> None:
+    def mark_rects(self, rects: List[Tuple[int, int]], color: str = "YELLOW") -> None:
         """
         Paint the list of cells as a color
         :param rects:
+        :param color:
         :return:
         """
         board = self.get_board1()
         for i in rects:
-            board[i[0]][i[1]].set_color("YELLOW")
+            board[i[0]][i[1]].set_color(color)
 
-    def random_cell(self, color: str = "WHITE", edge: bool = False) -> Tuple[int, int]:
-        """
-        Get a random cell on the board
-        :return:
-        """
-        lst = []
-        board = self.get_board1()
-        if edge:
-            a = 1
-        else:
-            a = 0
-        for i in range(a, self.size - a):
-            for j in range(a, self.size - a):
-                if board[i][j].color_str == color:
-                    lst.append((i, j))
-        return random.choice(lst)
+    # def random_cell(self, color: str = "WHITE", edge: bool = False) -> Tuple[int, int]:
+    #     """
+    #     Get a random cell on the board
+    #     :return:
+    #     """
+    #     lst = []
+    #     board = self.get_board1()
+    #     if edge:
+    #         a = 1
+    #     else:
+    #         a = 0
+    #     for i in range(a, self.size - a):
+    #         for j in range(a, self.size - a):
+    #             if board[i][j].color_str == color:
+    #                 lst.append((i, j))
+    #     return random.choice(lst)
