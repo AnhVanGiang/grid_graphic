@@ -61,7 +61,10 @@ class Board:
         self._gap = gap_size
         self._wwidth = wind_width
         self._size = size
-        self._bsize = self._wwidth // self._size + self._gap
+
+    @property
+    def bsize(self):
+        return self._wwidth // self._size + self._gap
 
     def change_cell_col(self, x: int, y: int, color: str) -> None:
         self._boards[x][y].set_color(color)
@@ -76,8 +79,8 @@ class Board:
         :param y: column
         :return:
         """
-        x = x * (self._bsize + self._gap)
-        y = y * (self._bsize + self._gap)
+        x = x * (self.bsize + self._gap)
+        y = y * (self.bsize + self._gap)
         return x, y
 
     @property
@@ -97,7 +100,7 @@ class Board:
             self._boards.append([])
             for j in range(self._size):
                 x, y = self.box_coords(i, j)
-                rect = NRect(x, y, self._bsize, self._bsize)
+                rect = NRect(x, y, self.bsize, self.bsize)
                 self._boards[i].append(rect)
 
     def get_rect(self, x: int, y: int) -> NRect:
@@ -136,14 +139,18 @@ class Board:
             b.extend(lst)
         return b
 
-    def reset_color(self) -> None:
+    def reset_color(self, color: str = "ALL") -> None:
         """
         Change the colors of every cell to WHITE
         :return:
         """
         board = self.get_board2()
         for rect in board:
-            rect.set_color("WHITE")
+            if color != "ALL":
+                if rect.color_str == color:
+                    rect.set_color("WHITE")
+            else:
+                rect.set_color("WHITE")
 
     def count_dist(self, color: str) -> int:
         """

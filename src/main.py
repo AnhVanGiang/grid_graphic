@@ -1,7 +1,8 @@
 import sys
 from pygame.locals import *
-from src.extra import *
+from extra import *
 from typing import List, Tuple
+from collections import deque
 
 FPS = 60  # frames per second, the general speed of the program
 WINDOWWIDTH = 800  # size of window's width in pixels
@@ -56,10 +57,7 @@ def get_coord_click(event: pygame.event, board: Board) -> Tuple[int, int]:
     :param board:
     :return:
     """
-    for i in range(board.size):
-        for j in range(board.size):
-            if board.get_rect(i, j).collidepoint(event.pos):
-                return i, j
+    return event.pos[0] // (board.bsize + GAPSIZE), event.pos[1] // (board.bsize + GAPSIZE)
 
 
 def color_all(board: Board, color: str):
@@ -72,21 +70,6 @@ def color_all(board: Board, color: str):
     board = board.get_board2()
     for b in board:
         b.set_color(color)
-
-
-def get_bcoord(event: pygame.event, board: Board) -> Tuple[int, int]:
-    """
-    Get the board coordinate of a mouse event
-    :param event: pygame event
-    :param board:
-    :return:
-    """
-    rects = board.get_board1()
-    n = len(rects)
-    for i in range(n):
-        for j in range(n):
-            if rects[i][j].collidepoint(event.pos):
-                return i, j
 
 
 def draw_board(surface: pygame.display, board: Board) -> None:
@@ -105,11 +88,12 @@ def dijstra(board: Board, start: Tuple[int, int], end: Tuple[int, int]) -> List[
     shortest = {start: (None, 0)}
     current = start
     visited = set()
+    color = "DARKBLUE"
 
     while current != end:
         pygame.event.get()
         visited.add(current)
-        board.get_rect(*current).set_color("RED")
+        board.get_rect(*current).set_color(color)
         neighbors = board.get_neighbors(*current, walls=True)
         weight_to_cur = shortest[current][1]
 
@@ -124,7 +108,7 @@ def dijstra(board: Board, start: Tuple[int, int], end: Tuple[int, int]) -> List[
         next_dests = {node: shortest[node] for node in shortest if node not in visited}
 
         if not next_dests:
-            board.reset_color()
+            board.reset_color(color)
             return [(0, 0)]
         current = min(next_dests, key=lambda k: next_dests[k][1])
 
@@ -140,13 +124,13 @@ def dijstra(board: Board, start: Tuple[int, int], end: Tuple[int, int]) -> List[
 
     path = path[::-1]
 
-    board.reset_color()
+    board.reset_color(color)
     return path
 
 
-def draw_slow(board: Board, paths: List[Tuple[int, int]]) -> None:
+def draw_slow(board: Board, paths: List[Tuple[int, int]], color: str) -> None:
     for x, y in paths:
-        board.get_rect(x, y).set_color("RED")
+        board.get_rect(x, y).set_color(color)
         draw_board(DISPLAYSURF, board)
         pygame.display.update()
 
@@ -157,8 +141,9 @@ keys = {
     pygame.K_b: "BLACK",
 }
 
-start_end = []
+start_end = deque(maxlen=2)
 paths = []
+pressed = False
 
 while True:
     DISPLAYSURF.fill(colors["NAVYBLUE"])
@@ -167,20 +152,21 @@ while True:
         if event.type == QUIT or (event.type == KEYDOWN and event.key == pygame.K_q):
             pygame.quit()
             sys.exit()
-        elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+        elif event.type == MOUSEBUTTONDOWN and event.button == 1 and not pressed:
+            print(event.pos[0] // 10, event.pos[1] // 10)
             try:
                 ev = get_coord_click(event, board)
                 if ev is not None:
                     start_end.append(ev)
-                check_collision(event, board, "RED", ev)
+                    check_collision(event, board, "RED", ev)
             except TypeError:
                 continue
-        elif event.type == MOUSEBUTTONDOWN and event.button == 3:
+        elif event.type == MOUSEBUTTONDOWN and event.button == 3 and not pressed:
             try:
                 check_collision(event, board, "BLACK", event.pos)
             except TypeError:
                 continue
-        elif event.type == MOUSEMOTION and moving:
+        elif event.type == MOUSEMOTION and moving and event.buttons[0]:
             try:
                 check_collision(event, board, cur_col, event.pos)
             except TypeError:
@@ -188,11 +174,12 @@ while True:
         elif event.type == KEYDOWN:
             if event.key in keys:
                 moving = not moving
+                pressed = not pressed
                 cur_col = keys[event.key]
             elif event.key == pygame.K_r:
-                board.reset_color()
+                board.reset_color("ALL")
             elif event.key == pygame.K_s:
-                paths = dijstra(board, start_end[0], start_end[1])
-                draw_slow(board, paths)
+                paths = dijstra(board, start_end.popleft(), start_end.popleft())
+                draw_slow(board, paths, "RED")
     pygame.display.update()
     fps_clock.tick(FPS)
