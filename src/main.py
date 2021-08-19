@@ -1,6 +1,7 @@
 import sys
 from pygame.locals import *
 from src.extra import *
+from typing import List, Tuple
 
 FPS = 60  # frames per second, the general speed of the program
 WINDOWWIDTH = 800  # size of window's width in pixels
@@ -56,7 +57,7 @@ def color_all(board: Board, color: str):
         b.set_color(color)
 
 
-def get_bcoord(event: pygame.event, board: Board) -> tuple[int, int]:
+def get_bcoord(event: pygame.event, board: Board) -> Tuple[int, int]:
     """
     Get the board coordinate of a mouse event
     :param event: pygame event
@@ -124,6 +125,8 @@ def draw_board(surface: pygame.display, board: Board) -> None:
 #             elif board.get_col(rwx - 1, rwy) == "WHITE" and board.get_col(rwx + 1, rwy) == "YELLOW":
 #                 pass
 
+def dijstra(board: Board):
+    
 
 while True:
     DISPLAYSURF.fill(colors["NAVYBLUE"])

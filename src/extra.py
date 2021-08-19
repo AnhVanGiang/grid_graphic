@@ -1,6 +1,7 @@
 import pygame
 from pygame import Rect, Color
 import random
+from typing import List, Tuple
 
 colors = {
     "WHITE": (255, 255, 255),
@@ -30,7 +31,7 @@ class NRect(Rect):
         super(NRect, self).__init__(x, y, width, height)
         self._color = color
 
-    def get_color(self) -> tuple[int, int, int]:
+    def get_color(self) -> Tuple[int, int, int]:
         """
         Get color of the rectangle as a RGB tuple
         :return:
@@ -68,7 +69,7 @@ class Board:
     def get_col(self, x: int, y: int) -> str:
         return self._boards[x][y].color_str
 
-    def box_coords(self, x: int, y: int) -> tuple[int, int]:
+    def box_coords(self, x: int, y: int) -> Tuple[int, int]:
         """
         Convert cell's coordinate on board to screen coordinate
         :param x: row
@@ -118,14 +119,14 @@ class Board:
         """
         self._boards[x][y] = rect
 
-    def get_board1(self) -> list[list[NRect]]:
+    def get_board1(self) -> List[List[NRect]]:
         """
         Get the whole board as 2d array
         :return:
         """
         return self._boards
 
-    def get_board2(self) -> list[NRect]:
+    def get_board2(self) -> List[NRect]:
         """
         Get the whole board as 1d array
         :return:
@@ -157,7 +158,7 @@ class Board:
                 c += 1
         return c
 
-    def get_neighbors(self, x: int, y: int, walls: False) -> list[tuple[int, int]]:
+    def get_neighbors(self, x: int, y: int, walls: False) -> List[Tuple[int, int]]:
         """
         Get the four directional neighbors of a cell. If walls is True, only get the ones where they arent black
         :param x:
@@ -179,7 +180,7 @@ class Board:
                     ret.append((nx, ny))
         return ret
 
-    def mark_rects(self, rects: list[tuple[int, int]]) -> None:
+    def mark_rects(self, rects: List[Tuple[int, int]]) -> None:
         """
         Paint the list of cells as a color
         :param rects:
@@ -189,7 +190,7 @@ class Board:
         for i in rects:
             board[i[0]][i[1]].set_color("YELLOW")
 
-    def random_cell(self, color: str = "WHITE", edge: bool = False) -> tuple[int, int]:
+    def random_cell(self, color: str = "WHITE", edge: bool = False) -> Tuple[int, int]:
         """
         Get a random cell on the board
         :return:
@@ -202,6 +203,6 @@ class Board:
             a = 0
         for i in range(a, self.size - a):
             for j in range(a, self.size - a):
-                if board[i][j].color_str() == color:
+                if board[i][j].color_str == color:
                     lst.append((i, j))
         return random.choice(lst)
