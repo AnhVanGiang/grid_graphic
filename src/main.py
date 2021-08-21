@@ -1,8 +1,15 @@
+#!/usr/bin/env python
+# coding: utf-8
 import sys
 from pygame.locals import *
 from extra import *
 from typing import List, Tuple
-from collections import deque
+import cv2
+from skimage.measure import block_reduce
+import numpy as np
+import pygame
+from graph import Graph
+import threading
 
 FPS = 60  # frames per second, the general speed of the program
 WINDOWWIDTH = 800  # size of window's width in pixels
@@ -13,27 +20,23 @@ DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWWIDTH))
 fps_clock = pygame.time.Clock()
 
 board = Board(BOARDSIZE, GAPSIZE, WINDOWWIDTH)
-
 board.create_board()
 
-moving = False
-cur_col = "RED"
-
 instruction = """
-
-a: continuous drawing with RED
-d: continuous drawing with BLUE
-b: continuous drawing with BLACK (wall)
-s: 
-left click: draw 1 block with RED
-right click: draw 1 block with BLUE
-
-"""
+    
+    a: continuous drawing with RED
+    d: continuous drawing with BLUE
+    b: continuous drawing with BLACK (wall)
+    s: 
+    left click: draw 1 block with RED
+    right click: draw 1 block with BLUE
+    
+    """
 
 
 def check_collision(event: pygame.event,
                     board: Board,
-                    color: str = "RED",
+                    color: Tuple[int, int, int] = COLORS["RED"],
                     coords: Tuple[int, int] = (0, 0)) -> None:
     """
     Check if mouse event touches any cells and change that cell color
@@ -60,7 +63,7 @@ def get_coord_click(event: pygame.event, board: Board) -> Tuple[int, int]:
     return event.pos[0] // (board.bsize + GAPSIZE), event.pos[1] // (board.bsize + GAPSIZE)
 
 
-def color_all(board: Board, color: str):
+def color_all(board: Board, color: Tuple[int, int, int]):
     """
     Color all cells on board
     :param board: board to color
@@ -81,54 +84,10 @@ def draw_board(surface: pygame.display, board: Board) -> None:
     """
     rects = board.get_board2()
     for item in rects:
-        pygame.draw.rect(surface, item.get_color(), item)
+        pygame.draw.rect(surface, item.color, item)
 
 
-def dijstra(board: Board, start: Tuple[int, int], end: Tuple[int, int]) -> List[Tuple[int, int]]:
-    shortest = {start: (None, 0)}
-    current = start
-    visited = set()
-    color = "DARKBLUE"
-
-    while current != end:
-        pygame.event.get()
-        visited.add(current)
-        board.get_rect(*current).set_color(color)
-        neighbors = board.get_neighbors(*current, walls=True)
-        weight_to_cur = shortest[current][1]
-
-        for next_node in neighbors:
-            weight = weight_to_cur + 1
-            if next_node not in shortest:
-                shortest[next_node] = (current, weight)
-            else:
-                current_lowest_weight = shortest[next_node][1]
-                if current_lowest_weight > weight:
-                    shortest[next_node] = (current, weight)
-        next_dests = {node: shortest[node] for node in shortest if node not in visited}
-
-        if not next_dests:
-            board.reset_color(color)
-            return [(0, 0)]
-        current = min(next_dests, key=lambda k: next_dests[k][1])
-
-        draw_board(DISPLAYSURF, board)
-        pygame.display.update()
-
-    path = []
-
-    while current is not None:
-        path.append(current)
-        next_node = shortest[current][0]
-        current = next_node
-
-    path = path[::-1]
-
-    board.reset_color(color)
-    return path
-
-
-def draw_slow(board: Board, paths: List[Tuple[int, int]], color: str) -> None:
+def draw_slow(board: Board, paths: List[Tuple[int, int]], color: Tuple[int, int, int]) -> None:
     for x, y in paths:
         board.get_rect(x, y).set_color(color)
         draw_board(DISPLAYSURF, board)
@@ -141,45 +100,85 @@ keys = {
     pygame.K_b: "BLACK",
 }
 
-start_end = deque(maxlen=2)
-paths = []
-pressed = False
 
-while True:
-    DISPLAYSURF.fill(colors["NAVYBLUE"])
-    draw_board(DISPLAYSURF, board)
-    for event in pygame.event.get():
-        if event.type == QUIT or (event.type == KEYDOWN and event.key == pygame.K_q):
-            pygame.quit()
-            sys.exit()
-        elif event.type == MOUSEBUTTONDOWN and event.button == 1 and not pressed:
-            print(event.pos[0] // 10, event.pos[1] // 10)
-            try:
-                ev = get_coord_click(event, board)
-                if ev is not None:
-                    start_end.append(ev)
-                    check_collision(event, board, "RED", ev)
-            except TypeError:
-                continue
-        elif event.type == MOUSEBUTTONDOWN and event.button == 3 and not pressed:
-            try:
-                check_collision(event, board, "BLACK", event.pos)
-            except TypeError:
-                continue
-        elif event.type == MOUSEMOTION and moving and event.buttons[0]:
-            try:
-                check_collision(event, board, cur_col, event.pos)
-            except TypeError:
-                continue
-        elif event.type == KEYDOWN:
-            if event.key in keys:
-                moving = not moving
-                pressed = not pressed
-                cur_col = keys[event.key]
-            elif event.key == pygame.K_r:
-                board.reset_color("ALL")
-            elif event.key == pygame.K_s:
-                paths = dijstra(board, start_end.popleft(), start_end.popleft())
-                draw_slow(board, paths, "RED")
-    pygame.display.update()
-    fps_clock.tick(FPS)
+def vid_cap(board: Board, surface: pygame.display):
+    downsample = (5, 8)
+    vc = cv2.VideoCapture(0)
+
+    if vc.isOpened():  # try to get the first frame
+        rval, frame = vc.read()
+    else:
+        rval = False
+
+    while rval:
+        pygame.event.get()
+        rval, frame = vc.read()
+        ds_array = frame / 255
+
+        r = block_reduce(ds_array[:, :, 0], downsample, np.mean)
+        g = block_reduce(ds_array[:, :, 1], downsample, np.mean)
+        b = block_reduce(ds_array[:, :, 2], downsample, np.mean)
+
+        ds_array = np.stack((r, g, b), axis=-1)
+
+        board.image_on_board(ds_array)
+
+        draw_board(surface, board)
+        pygame.display.update()
+
+
+def main():
+    pressed = False
+    moving = False
+    cur_col = COLORS["RED"]
+    graph = Graph(board)
+    c = 0
+
+    while True:
+        DISPLAYSURF.fill(COLORS["NAVYBLUE"])
+        draw_board(DISPLAYSURF, board)
+        for event in pygame.event.get():
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == pygame.K_q):
+                pygame.quit()
+                sys.exit()
+            elif event.type == MOUSEBUTTONDOWN and event.button == 1 and not pressed:
+                try:
+                    ev = get_coord_click(event, board)
+                    if ev is not None:
+                        graph.start_end[c] = ev
+                        print(graph.start_end)
+                        check_collision(event, board, COLORS["RED"], ev)
+                        c = not c
+                except TypeError:
+                    continue
+            elif event.type == MOUSEBUTTONDOWN and event.button == 3 and not pressed:
+                try:
+                    check_collision(event, board, COLORS["BLACK"], event.pos)
+                except TypeError:
+                    continue
+            elif event.type == MOUSEMOTION and moving and event.buttons[0]:
+                try:
+                    check_collision(event, board, COLORS[cur_col], event.pos)
+                except TypeError:
+                    continue
+            elif event.type == KEYDOWN:
+                if event.key in keys:
+                    moving = not moving
+                    pressed = not pressed
+                    cur_col = keys[event.key]
+                elif event.key == pygame.K_r:
+                    board.reset_color(eve=True)
+                elif event.key == pygame.K_s:
+                    t = threading.Thread(target=graph.dijstra)
+                    t.start()
+                elif event.key == pygame.K_t:
+                    t = threading.Thread(target=graph.astar)
+                    t.start()
+                elif event.key == pygame.K_c:
+                    vid_cap(board, DISPLAYSURF)
+        pygame.display.update()
+        fps_clock.tick(FPS)
+
+
+if __name__ == "__main__":
+    main()
