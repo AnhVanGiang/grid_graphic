@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 from typing import Tuple, List
 from extra import Board, COLORS
@@ -37,7 +36,6 @@ class Graph:
         self._board = board
         self._start_end = [(0, 0), (0, 0)]
         self._path: List[Tuple[int, int]] = [(0, 0)]
-        self._proc: List[Tuple[int, int]] = []
         self._color: Tuple[int, int, int] = COLORS["DARKBLUE"]
 
     def set_se(self, se: List[Tuple[int, int]]):
@@ -61,18 +59,21 @@ class Graph:
     def start_end(self):
         return self._start_end
 
+    def path(self):
+        return self._path
+
     def return_path(self, current_node: Node) -> None:
         current = current_node
+        path = []
         while current is not None:
-            self._path.append(current.position)
+            path.append(current.position)
             current = current.parent
             time.sleep(sys.float_info.min)
 
-        self._path = self._path[::-1]  # Return reversed path
+        self._path = path[::-1]  # Return reversed path
 
     def empty(self) -> None:
         self._path = []
-        self._proc = []
 
     def astar(self) -> None:
         self.empty()
@@ -86,8 +87,6 @@ class Graph:
         start_node.g = start_node.h = start_node.f = 0
         end_node = Node(None, self.end)
         end_node.g = end_node.h = end_node.f = 0
-
-        print(end_node.position)
 
         # Initialize both open and closed list
         open_list = []

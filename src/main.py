@@ -9,6 +9,7 @@ from skimage.measure import block_reduce
 import numpy as np
 import pygame
 from graph import Graph
+import multiprocessing as mp
 import threading
 
 FPS = 60  # frames per second, the general speed of the program
@@ -133,6 +134,8 @@ def main():
     cur_col = COLORS["RED"]
     graph = Graph(board)
     c = 0
+    proc = None
+    drawn = False
 
     while True:
         DISPLAYSURF.fill(COLORS["NAVYBLUE"])
@@ -171,11 +174,16 @@ def main():
                 elif event.key == pygame.K_s:
                     t = threading.Thread(target=graph.dijstra)
                     t.start()
+                    drawn = not drawn
                 elif event.key == pygame.K_t:
                     t = threading.Thread(target=graph.astar)
                     t.start()
+                    drawn = not drawn
                 elif event.key == pygame.K_c:
                     vid_cap(board, DISPLAYSURF)
+            elif drawn:
+                draw_slow(board, graph.path(), COLORS["RED"])
+                drawn = not drawn
         pygame.display.update()
         fps_clock.tick(FPS)
 
