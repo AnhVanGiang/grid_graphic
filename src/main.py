@@ -177,9 +177,9 @@ def main():
                     t.start()
                 elif event.key == pygame.K_c:
                     vid_cap(board, DISPLAYSURF)
-            elif graph.is_finished():
-                draw_slow(board, graph.path(), COLORS["RED"])
-                graph.not_finished()
+        if graph.is_finished():
+            draw_slow(board, graph.path(), COLORS["RED"])
+            graph.not_finished()
         pygame.display.update()
         fps_clock.tick(FPS)
 
