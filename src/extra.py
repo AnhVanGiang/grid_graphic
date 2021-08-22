@@ -201,4 +201,4 @@ class Board:
 
         for i in range(x):
             for j in range(y):
-                self._board[i][j].set_color_rgb(tuple(image[i, j]))
+                self._board[i][j].set_color(tuple(image[i, j]))

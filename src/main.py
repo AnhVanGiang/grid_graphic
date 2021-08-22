@@ -176,7 +176,8 @@ def main():
                     t = threading.Thread(target=graph.astar)
                     t.start()
                 elif event.key == pygame.K_c:
-                    vid_cap(board, DISPLAYSURF)
+                    t = threading.Thread(target=vid_cap, args=(board, DISPLAYSURF,))
+                    t.start()
         if graph.is_finished():
             draw_slow(board, graph.path(), COLORS["RED"])
             graph.not_finished()
