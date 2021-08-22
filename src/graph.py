@@ -37,6 +37,7 @@ class Graph:
         self._start_end = [(0, 0), (0, 0)]
         self._path: List[Tuple[int, int]] = [(0, 0)]
         self._color: Tuple[int, int, int] = COLORS["DARKBLUE"]
+        self._finished: bool = False
 
     def set_se(self, se: List[Tuple[int, int]]):
         self._start_end = se
@@ -69,11 +70,18 @@ class Graph:
             path.append(current.position)
             current = current.parent
             time.sleep(sys.float_info.min)
-
         self._path = path[::-1]  # Return reversed path
+        self._finished = True
+
+    def is_finished(self):
+        return self._finished
+
+    def not_finished(self):
+        self._finished = False
 
     def empty(self) -> None:
         self._path = []
+        self._finished = False
 
     def astar(self) -> None:
         self.empty()
@@ -144,6 +152,7 @@ class Graph:
             time.sleep(sys.float_info.min)
 
         self._path = [(0, 0)]
+        self._finished = True
         return
 
     def dijstra(self):
@@ -183,4 +192,5 @@ class Graph:
             time.sleep(sys.float_info.min)
 
         self._path = self._path[::-1]
+        self._finished = True
         return

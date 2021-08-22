@@ -135,7 +135,6 @@ def main():
     graph = Graph(board)
     c = 0
     proc = None
-    drawn = False
 
     while True:
         DISPLAYSURF.fill(COLORS["NAVYBLUE"])
@@ -149,7 +148,6 @@ def main():
                     ev = get_coord_click(event, board)
                     if ev is not None:
                         graph.start_end[c] = ev
-                        print(graph.start_end)
                         check_collision(event, board, COLORS["RED"], ev)
                         c = not c
                 except TypeError:
@@ -174,16 +172,14 @@ def main():
                 elif event.key == pygame.K_s:
                     t = threading.Thread(target=graph.dijstra)
                     t.start()
-                    drawn = not drawn
                 elif event.key == pygame.K_t:
                     t = threading.Thread(target=graph.astar)
                     t.start()
-                    drawn = not drawn
                 elif event.key == pygame.K_c:
                     vid_cap(board, DISPLAYSURF)
-            elif drawn:
+            elif graph.is_finished():
                 draw_slow(board, graph.path(), COLORS["RED"])
-                drawn = not drawn
+                graph.not_finished()
         pygame.display.update()
         fps_clock.tick(FPS)
 
