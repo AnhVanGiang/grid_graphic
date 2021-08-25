@@ -4,12 +4,24 @@ import numpy as np
 from pygame import Rect
 from typing import List, Tuple
 import numpy
+import queue
 
 DIRECTIONS = [
     (0, -1),
     (0, 1),
     (1, 0),
     (-1, 0)
+]
+
+DIRECTIONS_DIAG = [
+    (0, -1),
+    (0, 1),
+    (1, 0),
+    (-1, 0),
+    (-1, -1),
+    (1, 1),
+    (-1, 1),
+    (1, -1)
 ]
 
 COLORS = {
@@ -53,7 +65,7 @@ class NRect(Rect):
 class Board:
 
     def __init__(self, size: int, gap_size: int, wind_width: int):
-        self._board = []
+        self._board: List[List[NRect]] = []
         self._gap = gap_size
         self._wwidth = wind_width
         self._size = size
@@ -64,9 +76,6 @@ class Board:
 
     def change_cell_col(self, x: int, y: int, color: str) -> None:
         self._board[x][y].set_color(color)
-
-    def get_col(self, x: int, y: int) -> str:
-        return self._board[x][y].color_str
 
     def box_coords(self, x: int, y: int) -> Tuple[int, int]:
         """
@@ -171,6 +180,28 @@ class Board:
         """
         ret = []
         for i in DIRECTIONS:
+            nx, ny = x + i[0], y + i[1]
+            if not walls:
+                if (0 <= nx < self._size - 1) and (0 <= ny < self._size - 1):
+                    ret.append((nx, ny))
+            else:
+                board = self.get_board1()
+                if (0 <= nx < self._size - 1) \
+                        and (0 <= ny < self._size - 1) \
+                        and board[nx][ny].color != COLORS["BLACK"]:
+                    ret.append((nx, ny))
+        return ret
+
+    def get_neighbors_diag(self, x: int, y: int, walls: bool = False) -> List[Tuple[int, int]]:
+        """
+        Get the 8 directional neighbors of a cell. If walls is True, only get the ones where they arent black
+        :param x:
+        :param y:
+        :param walls:
+        :return:
+        """
+        ret = []
+        for i in DIRECTIONS_DIAG:
             nx, ny = x + i[0], y + i[1]
             if not walls:
                 if (0 <= nx < self._size - 1) and (0 <= ny < self._size - 1):
